@@ -30,23 +30,98 @@ const CartProvider: React.FC = ({ children }) => {
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // TODO LOAD ITEMS FROM ASYNC STORAGE
+      const prodStorage = await AsyncStorage.getItem('@GoMarketplace:products');
+
+      if (prodStorage) {
+        setProducts(JSON.parse(prodStorage));
+      }
     }
 
     loadProducts();
   }, []);
 
-  const addToCart = useCallback(async product => {
-    // TODO ADD A NEW ITEM TO THE CART
-  }, []);
+  const addToCart = useCallback(
+    async product => {
+      // Copia o array do state
+      const currentProducts: Product[] = [...products];
 
-  const increment = useCallback(async id => {
-    // TODO INCREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+      // Verifica se o produto já existe no carrinho
+      const productIndex = currentProducts.findIndex(
+        prod => prod.id === product.id,
+      );
 
-  const decrement = useCallback(async id => {
-    // TODO DECREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+      // Significa que o produto já existe no array
+      if (productIndex !== -1) {
+        currentProducts[productIndex].quantity += 1;
+      } else {
+        // Insere no array copiado o novo produto enviado, com quantidadde = 1
+        // O Spread pega todas as propriedades do primeiro parâmetro e adiciona o que veio depois da vírgula
+        currentProducts.push({ ...product, quantity: 1 });
+      }
+      // Seta no state o array alterado
+      setProducts(currentProducts);
+
+      // Seta no AsyncStorage os produtos
+      await AsyncStorage.setItem(
+        '@GoMarketplace:products',
+        JSON.stringify(currentProducts),
+      );
+    },
+    [products],
+  );
+
+  const increment = useCallback(
+    async id => {
+      // Copia o array do state
+      const currentProducts: Product[] = [...products];
+
+      const productIndex = currentProducts.findIndex(prod => prod.id === id);
+
+      if (productIndex !== -1) {
+        currentProducts[productIndex].quantity += 1;
+
+        // Seta no state o array alterado
+        setProducts(currentProducts);
+      }
+
+      // Seta no AsyncStorage os produtos
+      await AsyncStorage.setItem(
+        '@GoMarketplace:products',
+        JSON.stringify(currentProducts),
+      );
+    },
+    [products],
+  );
+
+  const decrement = useCallback(
+    async id => {
+      // Copia o array do state
+      const currentProducts: Product[] = [...products];
+
+      // Encontra o index onde está o produto
+      const productIndex = currentProducts.findIndex(prod => prod.id === id);
+
+      if (productIndex !== -1) {
+        // Se caso ele tenha somente 1 unidade, remove ele do array
+        if (currentProducts[productIndex].quantity == 1) {
+          currentProducts.splice(productIndex, 1);
+        } else {
+          // Senão, decrementa a quantidade
+          currentProducts[productIndex].quantity -= 1;
+        }
+
+        // Seta no state o array alterado
+        setProducts(currentProducts);
+      }
+
+      // Seta no AsyncStorage os produtos
+      await AsyncStorage.setItem(
+        '@GoMarketplace:products',
+        JSON.stringify(currentProducts),
+      );
+    },
+    [products],
+  );
 
   const value = React.useMemo(
     () => ({ addToCart, increment, decrement, products }),
